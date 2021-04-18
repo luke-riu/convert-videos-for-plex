@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash; C:/Program\ Files/Git/user/bin/sh.exe
 
 shopt -s globstar
 
@@ -209,7 +209,7 @@ for i in "${path}"{,**/}*.*; do
                     fi
 
                     # Modified from http://pastebin.com/9JnS23fK
-                    HandBrakeCLI -i "${fileIn}" -o "${fileOut}""_processing""${ext}" --preset="${qualityPreset}" -O ${subtitle} ${audio}
+                    HandBrakeCLI -i "${fileIn}" -o "${fileOut}""_processing""${ext}" --preset="${qualityPreset}" -O ${subtitle} ${audio} -e nvenc_h264
          
                     # if HandBrake did not exit gracefully, continue with next iteration
                     if [[ $? -ne 0 ]]; then
