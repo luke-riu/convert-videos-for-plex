@@ -39,6 +39,8 @@ Command line options:
 -b          Select a subtitle track to burn in.
 -c          Codec to modify. Default is MPEG-4
 -d          Delete original.
+-e          Convert everything! This will bypass compatibility checks. Useful if you just want to maybe
+            convert the whole directory to a smaller resolution. When using this, you might need to also use '-f' or '-d'
 -f          Force overwriting of files if already exist in output destination.
 -o          Output folder directory path.
             Default is the same directory as the input file.
@@ -62,6 +64,9 @@ Examples:
 
     Transcode all network movies using Desktop as temp directory and delete original files.
         .convert-videos-for-plex.sh -rd -p /Volumes/Public/Movies -w ~/Desktop
+
+    Transcode an entire directory, despite the format or compatibility.
+        .convert-videos-for-plex.sh -rde -p ~/Movies
 ```
 
 ## Things to consider
