@@ -30,6 +30,8 @@ echo "-a          Select an audio track to use."
 echo "-b          Select a subtitle track to burn in."
 echo "-c          Codec to modify. Default is MPEG-4"
 echo "-d          Delete original."
+echo "-e          Convert everything! This will bypass compatibility checks. Useful if you just want to maybe"
+echo "            convert the whole directory to a smaller resolution."
 echo "-f          Force overwriting of files if already exist in output destination."
 echo "-o          Output folder directory path."
 echo "            Default is the same directory as the input file."
@@ -62,6 +64,7 @@ path="./"
 out=""
 name=""
 ext=".mp4"
+everything=false
 force=false
 skip=false
 forceOverwrite=false
@@ -79,13 +82,21 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-while getopts "h?dfsrp:o:c:w:q:a:b:" opt; do
+function removeLock {
+    if [[ -f "$1" ]]; then
+        rm "$1"
+    fi
+}
+
+while getopts "h?defsrp:o:c:w:q:a:b:" opt; do
     case "$opt" in
     h|\?)
         showHelp
         exit 0
         ;;
     d)  del=true
+        ;;
+    e)  everything=true
         ;;
     f)  force=true
         ;;
@@ -140,10 +151,23 @@ for i in "${path}"{,**/}*.*; do
         # Loop over avi, mkv, iso, img, mp4 and m4v files only.
         if [[ $i == *.avi || $i == *.mkv || $i == *.iso || $i == *.img || $i == *.mp4 || $i == *.m4v ]]; then
             ((count++))
+
+            lockPath="${i}.lock"
+                    
+            if [[ -f "${lockPath}" ]]; then
+                echo -e "${BLUE}Lockfile for $i exists. Skipping.${NC}"
+                continue
+            fi
+            
+            if [[ $run == true ]]; then
+                touch "${lockPath}"
+            fi
+
             echo
             echo "${count}) Checking: "$i
 
-            if [[ ($audio != "" || $subtitle != "")
+            if [[ $everything == true 
+                || ($audio != "" || $subtitle != "")
                 || $(mediainfo --Inform="Video;%Format%" "$i") == *$codec* 
                 || $(mediainfo --Inform="Video;%Format%" "$i") == "HEVC" 
                 || $(mediainfo --Inform="Video;%Format%" "$i") == "xvid" 
@@ -182,10 +206,12 @@ for i in "${path}"{,**/}*.*; do
                                 echo -e "${BLUE}Overwriting:${NC} "$name$ext
                             else
                                 echo -e "${RED}Skipping (already exists):${NC} "$name$ext
+                                removeLock "${lockPath}"
                                 continue
                             fi
                         else
                             echo -e "${RED}Skipping (already exists):${NC} "$name$ext
+                            removeLock "${lockPath}"
                             continue
                         fi
                     else
@@ -209,10 +235,11 @@ for i in "${path}"{,**/}*.*; do
                     fi
 
                     # Modified from http://pastebin.com/9JnS23fK
-                    HandBrakeCLI -i "${fileIn}" -o "${fileOut}""_processing""${ext}" --preset="${qualityPreset}" -O ${subtitle} ${audio} -e nvenc_h264
-         
+                    HandBrakeCLI -i "${fileIn}" -o "${fileOut}""_processing""${ext}" --preset="${qualityPreset}" -O ${subtitle} ${audio}
+
                     # if HandBrake did not exit gracefully, continue with next iteration
                     if [[ $? -ne 0 ]]; then
+                        removeLock "${lockPath}"
                         continue
                     else
                         # Delete original files
@@ -243,6 +270,8 @@ for i in "${path}"{,**/}*.*; do
                 currentProfile=$(mediainfo --Inform="Video;%Format_Profile%" "$i")
                 echo -e "${RED}Skipping (video format ${currentFormat} ${currentProfile} will already play in Plex)${NC}"
             fi
+
+            removeLock "${lockPath}"
         fi
     fi
 done
