@@ -30,6 +30,8 @@ echo "-a          Select an audio track to use."
 echo "-b          Select a subtitle track to burn in."
 echo "-c          Codec to modify. Default is MPEG-4"
 echo "-d          Delete original."
+echo "-e          Convert everything! This will bypass compatibility checks. Useful if you just want to maybe"
+echo "            convert the whole directory to a smaller resolution."
 echo "-f          Force overwriting of files if already exist in output destination."
 echo "-o          Output folder directory path."
 echo "            Default is the same directory as the input file."
@@ -62,6 +64,7 @@ path="./"
 out=""
 name=""
 ext=".mp4"
+everything=false
 force=false
 skip=false
 forceOverwrite=false
@@ -85,13 +88,15 @@ function removeLock {
     fi
 }
 
-while getopts "h?dfsrp:o:c:w:q:a:b:" opt; do
+while getopts "h?defsrp:o:c:w:q:a:b:" opt; do
     case "$opt" in
     h|\?)
         showHelp
         exit 0
         ;;
     d)  del=true
+        ;;
+    e)  everything=true
         ;;
     f)  force=true
         ;;
@@ -161,7 +166,8 @@ for i in "${path}"{,**/}*.*; do
             echo
             echo "${count}) Checking: "$i
 
-            if [[ ($audio != "" || $subtitle != "")
+            if [[ $everything == true 
+                || ($audio != "" || $subtitle != "")
                 || $(mediainfo --Inform="Video;%Format%" "$i") == *$codec* 
                 || $(mediainfo --Inform="Video;%Format%" "$i") == "HEVC" 
                 || $(mediainfo --Inform="Video;%Format%" "$i") == "xvid" 
