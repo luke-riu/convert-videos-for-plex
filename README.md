@@ -66,7 +66,7 @@ Examples:
         .convert-videos-for-plex.sh -rd -p /Volumes/Public/Movies -w ~/Desktop
 
     Transcode an entire directory, despite the format or compatibility.
-        .convert-videos-for-plex.sh -rde -p ~/Movies
+        .convert-videos-for-plex.sh -rde -q 'Fast 720p30' -p ~/Movies
 ```
 
 ## Things to consider
