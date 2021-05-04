@@ -1,4 +1,4 @@
-#!/bin/bash; C:/Program\ Files/Git/user/bin/sh.exe
+#!/bin/bash
 
 shopt -s globstar
 
@@ -79,6 +79,12 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+function removeLock {
+    if [[ -f "$1" ]]; then
+        rm "$1"
+    fi
+}
+
 while getopts "h?dfsrp:o:c:w:q:a:b:" opt; do
     case "$opt" in
     h|\?)
@@ -140,6 +146,18 @@ for i in "${path}"{,**/}*.*; do
         # Loop over avi, mkv, iso, img, mp4 and m4v files only.
         if [[ $i == *.avi || $i == *.mkv || $i == *.iso || $i == *.img || $i == *.mp4 || $i == *.m4v ]]; then
             ((count++))
+
+            lockPath="${i}.lock"
+                    
+            if [[ -f "${lockPath}" ]]; then
+                echo -e "${BLUE}Lockfile for $i exists. Skipping.${NC}"
+                continue
+            fi
+            
+            if [[ $run == true ]]; then
+                touch "${lockPath}"
+            fi
+
             echo
             echo "${count}) Checking: "$i
 
@@ -182,10 +200,12 @@ for i in "${path}"{,**/}*.*; do
                                 echo -e "${BLUE}Overwriting:${NC} "$name$ext
                             else
                                 echo -e "${RED}Skipping (already exists):${NC} "$name$ext
+                                removeLock "${lockPath}"
                                 continue
                             fi
                         else
                             echo -e "${RED}Skipping (already exists):${NC} "$name$ext
+                            removeLock "${lockPath}"
                             continue
                         fi
                     else
@@ -197,6 +217,7 @@ for i in "${path}"{,**/}*.*; do
                 echo "Transcoding: "${i} to $name$ext
 
                 if [[ $run == true ]]; then
+                    
                     # Set file locations: in situ or separate workspace
                     if [[ $workspace == "" ]]; then
                         fileIn="${i}"
@@ -209,10 +230,11 @@ for i in "${path}"{,**/}*.*; do
                     fi
 
                     # Modified from http://pastebin.com/9JnS23fK
-                    HandBrakeCLI -i "${fileIn}" -o "${fileOut}""_processing""${ext}" --preset="${qualityPreset}" -O ${subtitle} ${audio} -e nvenc_h264
-         
+                    HandBrakeCLI -i "${fileIn}" -o "${fileOut}""_processing""${ext}" --preset="${qualityPreset}" -O ${subtitle} ${audio}
+
                     # if HandBrake did not exit gracefully, continue with next iteration
                     if [[ $? -ne 0 ]]; then
+                        removeLock "${lockPath}"
                         continue
                     else
                         # Delete original files
@@ -243,6 +265,8 @@ for i in "${path}"{,**/}*.*; do
                 currentProfile=$(mediainfo --Inform="Video;%Format_Profile%" "$i")
                 echo -e "${RED}Skipping (video format ${currentFormat} ${currentProfile} will already play in Plex)${NC}"
             fi
+
+            removeLock "${lockPath}"
         fi
     fi
 done
